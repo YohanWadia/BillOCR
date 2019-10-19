@@ -36,6 +36,7 @@ import com.google.firebase.ml.vision.text.RecognizedLanguage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -152,6 +153,9 @@ public class MainActivity extends AppCompatActivity {
         Log.e("DEMENSIONS", imgBitmapW +"|"+ imageBitmap.getHeight());
         wRatio = imageBitmap.getWidth()/((float)activityW);
         Log.e( "W_Ratio","ratio: " + wRatio );
+
+        for(String s : info){ Log.e("ArrLIST", s);}
+
     }
 
     public void detectText(View v) {
@@ -197,14 +201,14 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("LINE",lineText);
                 Log.e("Frame",lineFrame.left +"|"+ lineFrame.top +"|"+lineFrame.right +"|"+lineFrame.bottom + "\n");
 
-                if( (lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right> (imgBitmapW * 0.9)) ){
-
+                if( (lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right> (imgBitmapW * 0.9)) ){//from left - right
+                    workOnLast2(line);
                 }
-                else if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right > (imgBitmapW * 0.1))){
+                else if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right > (imgBitmapW * 0.1))){//only particulars on left
                     info.add(lineText); arr[i] = lineFrame.top;
                 }
                 else if((lineFrame.right > (imgBitmapW * 0.9))){
-
+                    workOnLast2(line);
                 }
 
                 avgLineH = lineFrame.bottom - lineFrame.top;
@@ -225,6 +229,44 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void workOnLast2(FirebaseVisionText.Line line) {
+        boolean isNum=false;
+        int howmany = line.getElements().size();
+        if(howmany>1){
+            isNum = checkNaN(line.getElements().get(howmany-2));//means secondLast
+            if(isNum){
+                info.add(line.getElements().get(howmany-2).getText());
+            }
+            else {
+                isNum = checkNaN(line.getElements().get(howmany-1));//means now we can check the last
+                if(isNum){
+                    info.add(line.getElements().get(howmany-1).getText());
+                }
+            }
+        }
+        else if(howmany==1){
+            isNum = checkNaN(line.getElements().get(0));
+            if(isNum){
+                info.add(line.getElements().get(0).getText());
+            }
+        }
+    }
+
+    private boolean checkNaN(FirebaseVisionText.Element element) {
+        boolean b=true;
+        String str = element.getText();
+        for (char c : str.toCharArray())
+        {
+            if (!Character.isDigit(c))
+            {
+                if (!(c=='.' | c==',')){//so only if its NOT a num and then NOT , or . //else it will return true
+                   b=false; break;
+                }
+            }
+        }
+
+        return b;
+    }
 
 
 }
