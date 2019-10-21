@@ -36,6 +36,7 @@ import com.google.firebase.ml.vision.text.RecognizedLanguage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 
@@ -46,9 +47,9 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap imageBitmap;
 
     List<Rect> arrRectsW,arrRectsL;
-    List<String> info;
-    int[] arr;
-
+    List<Integer> arrTop;
+    List<String> arrItem, arrPrice;
+    Map<String, String> itemMap,priceMap;
 
     int activityW,activityH, imgBitmapW;
     int avgLineH;
@@ -68,8 +69,9 @@ public class MainActivity extends AppCompatActivity {
 
         arrRectsL = new ArrayList<>();
         arrRectsW = new ArrayList<>();
-        info = new ArrayList<>();
-        arr = new int[20];
+        arrTop = new ArrayList<>();
+        arrPrice = new ArrayList<>();
+        arrItem = new ArrayList<>();
 
         DisplayMetrics metrics = getResources().getDisplayMetrics();
         activityW = metrics.widthPixels;
@@ -154,8 +156,8 @@ public class MainActivity extends AppCompatActivity {
         wRatio = imageBitmap.getWidth()/((float)activityW);
         Log.e( "W_Ratio","ratio: " + wRatio );
 
-        for(String s : info){ Log.e("ArrLIST", s);}
-
+        for(String s : arrItem){ Log.e("ArrLIST", s);}
+        for(String s : arrPrice){ Log.e("ArrLIST",arrPrice.size() + s);}
     }
 
     public void detectText(View v) {
@@ -181,6 +183,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        arrPrice.clear();arrItem.clear();arrTop.clear();
+
         for (FirebaseVisionText.TextBlock block: text.getTextBlocks()) {
             String blockText = block.getText();
             Point[] blockCornerPoints = block.getCornerPoints();
@@ -201,18 +205,47 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("LINE",lineText);
                 Log.e("Frame",lineFrame.left +"|"+ lineFrame.top +"|"+lineFrame.right +"|"+lineFrame.bottom + "\n");
 
-                if( (lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right> (imgBitmapW * 0.9)) ){//from left - right
-                    workOnLast2(line);
-                }
-                else if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right > (imgBitmapW * 0.1))){//only particulars on left
-                    info.add(lineText); arr[i] = lineFrame.top;
-                }
-                else if((lineFrame.right > (imgBitmapW * 0.9))){
-                    workOnLast2(line);
-                }
-
                 avgLineH = lineFrame.bottom - lineFrame.top;
                 Log.e("LINE-Height","lineH: " + avgLineH);
+
+                if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right> (imgBitmapW * 0.9)) ){//from left - right
+                   String ans = workOnLast2(line);
+                        arrTop.add(lineFrame.top);
+                        arrPrice.add(ans);
+
+                        int x = lineText.indexOf(ans);
+                        String ans1 = lineText.substring(0, x);
+                        arrItem.add(ans1);
+
+                }
+                else if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right > (imgBitmapW * 0.1))){//only particulars on left
+                    if(arrTop.isEmpty()){//this means he is first to be reg
+                        arrTop.add(lineFrame.top);
+                        arrItem.add(lineText);
+                    }
+                    else{
+                        if(arrItem.size()>=arrPrice.size()){
+                            arrTop.add(lineFrame.top);//only if itemsize >= Pricesize can this be the new entry for a new Top
+                        }
+                        arrItem.add(lineText);
+                    }
+                }
+                else if((lineFrame.right > (imgBitmapW * 0.9))){
+                    String ans = workOnLast2(line);
+                    if(arrTop.isEmpty()){//luckily we dont need to check a blank space above here, CZ 100% an item will come to pair with this price
+                        arrTop.add(lineFrame.top);
+                        arrPrice.add(ans);Log.e("SAVED","111111111111");
+                    }
+                    else{
+                        if(arrPrice.size()==arrItem.size()){
+                            arrTop.add(lineFrame.top);
+                        }
+                        arrPrice.add(ans);Log.e("SAVED","22222222222");
+                    }
+
+                }
+
+
 
                 for (FirebaseVisionText.Element element: line.getElements()) {
                     String elementText = element.getText();
@@ -225,31 +258,36 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-        makeBoxes(true);
-
+     makeBoxes(true);
     }
 
-    private void workOnLast2(FirebaseVisionText.Line line) {
+
+
+    private String workOnLast2(FirebaseVisionText.Line line) {
+        String ans=null;
         boolean isNum=false;
         int howmany = line.getElements().size();
+
         if(howmany>1){
             isNum = checkNaN(line.getElements().get(howmany-2));//means secondLast
             if(isNum){
-                info.add(line.getElements().get(howmany-2).getText());
+                ans = line.getElements().get(howmany-2).getText();
             }
             else {
                 isNum = checkNaN(line.getElements().get(howmany-1));//means now we can check the last
                 if(isNum){
-                    info.add(line.getElements().get(howmany-1).getText());
+                    ans = line.getElements().get(howmany-1).getText();
                 }
             }
         }
         else if(howmany==1){
             isNum = checkNaN(line.getElements().get(0));
             if(isNum){
-                info.add(line.getElements().get(0).getText());
+                ans = line.getElements().get(0).getText();
             }
         }
+
+        return ans;
     }
 
     private boolean checkNaN(FirebaseVisionText.Element element) {
@@ -259,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
         {
             if (!Character.isDigit(c))
             {
-                if (!(c=='.' | c==',')){//so only if its NOT a num and then NOT , or . //else it will return true
+                if (!(c=='.' | c==',' | c=='-' )){//so only if its NOT a num and then NOT , - . //else it will return true
                    b=false; break;
                 }
             }
