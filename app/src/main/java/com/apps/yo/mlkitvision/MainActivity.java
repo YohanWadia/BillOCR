@@ -35,7 +35,10 @@ import com.google.firebase.ml.vision.text.RecognizedLanguage;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 
@@ -46,8 +49,8 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap imageBitmap;
 
     List<Rect> arrRectsW,arrRectsL;
-    List<String> info;
-    int[] arr;
+    Map<Integer,Bill> infoMap;
+    Map<Integer, Bill> treeMap;//for sorti
 
 
     int activityW,activityH, imgBitmapW;
@@ -68,8 +71,8 @@ public class MainActivity extends AppCompatActivity {
 
         arrRectsL = new ArrayList<>();
         arrRectsW = new ArrayList<>();
-        info = new ArrayList<>();
-        arr = new int[20];
+        infoMap = new HashMap<>();
+
 
         DisplayMetrics metrics = getResources().getDisplayMetrics();
         activityW = metrics.widthPixels;
@@ -154,7 +157,8 @@ public class MainActivity extends AppCompatActivity {
         wRatio = imageBitmap.getWidth()/((float)activityW);
         Log.e( "W_Ratio","ratio: " + wRatio );
 
-        for(String s : info){ Log.e("ArrLIST", s);}
+
+        for(Bill bill : infoMap.values() ) {Log.e("ArrLIST", bill.item + "..... " + bill.price);}
 
     }
 
@@ -202,13 +206,14 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("Frame",lineFrame.left +"|"+ lineFrame.top +"|"+lineFrame.right +"|"+lineFrame.bottom + "\n");
 
                 if( (lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right> (imgBitmapW * 0.9)) ){//from left - right
-                    workOnLast2(line);
+                    workOnLast2(line,lineFrame.top);
                 }
                 else if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right > (imgBitmapW * 0.1))){//only particulars on left
-                    info.add(lineText); arr[i] = lineFrame.top;
+                    Bill b = new Bill(lineText,"---");
+                    infoMap.put(lineFrame.top,b);
                 }
                 else if((lineFrame.right > (imgBitmapW * 0.9))){
-                    workOnLast2(line);
+                    workOnLast2(line,lineFrame.top);
                 }
 
                 avgLineH = lineFrame.bottom - lineFrame.top;
@@ -229,27 +234,63 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void workOnLast2(FirebaseVisionText.Line line) {
+    private void workOnLast2(FirebaseVisionText.Line line, int frameTop) {
+        //treeMap.clear();
+        treeMap = new TreeMap<Integer, Bill>(infoMap);
+
         boolean isNum=false;
         int howmany = line.getElements().size();
         if(howmany>1){
             isNum = checkNaN(line.getElements().get(howmany-2));//means secondLast
             if(isNum){
-                info.add(line.getElements().get(howmany-2).getText());
+                int key = whereToPut(frameTop);
+                String price = line.getElements().get(howmany-2).getText();
+                Bill b = infoMap.get(key);
+                b.price=price;
+                infoMap.put(key,b);//replacing original oBject values
+
             }
             else {
                 isNum = checkNaN(line.getElements().get(howmany-1));//means now we can check the last
                 if(isNum){
-                    info.add(line.getElements().get(howmany-1).getText());
+                    int key = whereToPut(frameTop);
+                    String price = line.getElements().get(howmany-1).getText();
+                    Bill b = infoMap.get(key);
+                    b.price=price;
+                    infoMap.put(key,b);//replacing original oBject values
                 }
             }
         }
         else if(howmany==1){
             isNum = checkNaN(line.getElements().get(0));
             if(isNum){
-                info.add(line.getElements().get(0).getText());
+                int key = whereToPut(frameTop);
+                String price = line.getElements().get(0).getText();
+                Bill b = infoMap.get(key);
+                b.price=price;
+                infoMap.put(key,b);//replacing original oBject values
             }
         }
+    }
+
+    private int whereToPut(int frameTop) {
+        int key=0;
+        //for(Bill bill : info){ Log.e("ArrLIST", bill.item + "..... " + bill.price);}
+        Log.e("FRAME TOP", "TOP: "+ frameTop);
+
+        int closest=100000;
+        for ( Integer k : treeMap.keySet() ) {
+
+            int diff = (frameTop-k >0)? frameTop-k : ((frameTop-k)*(-1));
+            if(diff<closest){
+                closest=diff;
+                key = k;
+            }
+            Log.e("MAP CHECK", diff +"|"+closest);
+
+        }
+
+        return key;
     }
 
     private boolean checkNaN(FirebaseVisionText.Element element) {

@@ -4,10 +4,10 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Bill implements Parcelable {
-    String item;
-    float price;
 
-    public Bill(String item, float price) {
+    String item,price;
+
+    public Bill(String item, String price) {
         this.item = item;
         this.price = price;
     }
@@ -15,7 +15,7 @@ public class Bill implements Parcelable {
 
     protected Bill(Parcel in) {
         item = in.readString();
-        price = in.readFloat();
+        price = in.readString();
     }
 
     public static final Creator<Bill> CREATOR = new Creator<Bill>() {
@@ -38,6 +38,6 @@ public class Bill implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(item);
-        dest.writeFloat(price);
+        dest.writeString(price);
     }
 }
