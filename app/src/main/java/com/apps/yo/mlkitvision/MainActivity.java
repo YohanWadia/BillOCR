@@ -322,6 +322,10 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void nextPg(View view) {
+        ArrayList forSending = (ArrayList) arrBill;
+        Intent i = new Intent(this,Main2Activity.class);
+        i.putParcelableArrayListExtra("bills", forSending);
+        startActivity(i);
 
     }
 }
