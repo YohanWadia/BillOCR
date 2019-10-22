@@ -47,9 +47,10 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap imageBitmap;
 
     List<Rect> arrRectsW,arrRectsL;
-    List<Integer> arrTop;
-    List<String> arrItem, arrPrice;
-    Map<String, String> itemMap,priceMap;
+    List<Item> arrItem;
+    List<Price> arrPrice;
+    List<Bill> arrBill;
+
 
     int activityW,activityH, imgBitmapW;
     int avgLineH;
@@ -69,9 +70,9 @@ public class MainActivity extends AppCompatActivity {
 
         arrRectsL = new ArrayList<>();
         arrRectsW = new ArrayList<>();
-        arrTop = new ArrayList<>();
         arrPrice = new ArrayList<>();
         arrItem = new ArrayList<>();
+        arrBill = new ArrayList<>();
 
         DisplayMetrics metrics = getResources().getDisplayMetrics();
         activityW = metrics.widthPixels;
@@ -156,8 +157,36 @@ public class MainActivity extends AppCompatActivity {
         wRatio = imageBitmap.getWidth()/((float)activityW);
         Log.e( "W_Ratio","ratio: " + wRatio );
 
-        for(String s : arrItem){ Log.e("ArrLIST", s);}
-        for(String s : arrPrice){ Log.e("ArrLIST",arrPrice.size() + s);}
+
+
+        for(int x=0; x<arrPrice.size(); x++){
+            Price p = arrPrice.get(x);
+            String str = p.price.replace(",",".");
+            Float pf =  Float.valueOf(str);
+            for(int y=0; y<arrItem.size();y++){
+                Item i = arrItem.get(y);
+                if(y<arrItem.size()-1) {
+                    Item ii = arrItem.get(y + 1);
+                    int diff1 = i.top - p.top;
+                    int diff2 = ii.top - p.top;
+                    diff1 = (diff1 < 0) ? diff1 * (-1) : diff1;
+                    diff2 = (diff2 < 0) ? diff2 * (-1) : diff2;
+                    if ((diff1 < avgLineH) && (diff1 <= diff2)) {
+                        Bill obj = new Bill(i.item, pf);
+                        arrBill.add(obj);
+                        break;
+                    }
+                }
+                else if(y==arrItem.size()-1){
+                        Bill obj = new Bill(i.item,pf);
+                        arrBill.add(obj); break;
+                }
+            }//y loop
+        }//x loop
+
+        for(Bill bb : arrBill ){
+            Log.e("ArrLIST", bb.item + "|" + bb.price );
+        }
     }
 
     public void detectText(View v) {
@@ -183,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        arrPrice.clear();arrItem.clear();arrTop.clear();
+        arrPrice.clear();arrItem.clear(); arrBill.clear();
 
         for (FirebaseVisionText.TextBlock block: text.getTextBlocks()) {
             String blockText = block.getText();
@@ -194,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
             //Log.e("Frame",blockFrame.left +"|"+ blockFrame.top +"|"+blockFrame.right +"|"+blockFrame.bottom);
             //Float blockConfidence = block.getConfidence();
             //List<RecognizedLanguage> blockLanguages = block.getRecognizedLanguages();
-            int i = 0;
+
             for (FirebaseVisionText.Line line: block.getLines()) {
                 String lineText = line.getText();
                 //Float lineConfidence = line.getConfidence();
@@ -210,41 +239,26 @@ public class MainActivity extends AppCompatActivity {
 
                 if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right> (imgBitmapW * 0.9)) ){//from left - right
                    String ans = workOnLast2(line);
-                        arrTop.add(lineFrame.top);
-                        arrPrice.add(ans);
+                        Price p = new Price(lineFrame.top,ans);
+                        arrPrice.add(p);
 
                         int x = lineText.indexOf(ans);
                         String ans1 = lineText.substring(0, x);
-                        arrItem.add(ans1);
+                        Item i = new Item(lineFrame.top,ans1);
+                        arrItem.add(i);
 
                 }
                 else if((lineFrame.left< (imgBitmapW * 0.1)) && (lineFrame.right > (imgBitmapW * 0.1))){//only particulars on left
-                    if(arrTop.isEmpty()){//this means he is first to be reg
-                        arrTop.add(lineFrame.top);
-                        arrItem.add(lineText);
-                    }
-                    else{
-                        if(arrItem.size()>=arrPrice.size()){
-                            arrTop.add(lineFrame.top);//only if itemsize >= Pricesize can this be the new entry for a new Top
-                        }
-                        arrItem.add(lineText);
-                    }
+                    Item i = new Item(lineFrame.top,lineText);
+                    arrItem.add(i);
                 }
                 else if((lineFrame.right > (imgBitmapW * 0.9))){
                     String ans = workOnLast2(line);
-                    if(arrTop.isEmpty()){//luckily we dont need to check a blank space above here, CZ 100% an item will come to pair with this price
-                        arrTop.add(lineFrame.top);
-                        arrPrice.add(ans);Log.e("SAVED","111111111111");
+                    if(ans!=null) {
+                        Price p = new Price(lineFrame.top, ans);
+                        arrPrice.add(p);
                     }
-                    else{
-                        if(arrPrice.size()==arrItem.size()){
-                            arrTop.add(lineFrame.top);
-                        }
-                        arrPrice.add(ans);Log.e("SAVED","22222222222");
-                    }
-
                 }
-
 
 
                 for (FirebaseVisionText.Element element: line.getElements()) {
@@ -307,4 +321,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    public void nextPg(View view) {
+
+    }
 }

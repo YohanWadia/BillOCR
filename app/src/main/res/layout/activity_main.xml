@@ -12,12 +12,13 @@
         android:id="@+id/snapBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="57dp"
+        android:layout_marginStart="32dp"
         android:onClick="getImage"
         android:text="Get Bill"
         app:layout_constraintBottom_toBottomOf="@+id/detectBtn"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/detectBtn" />
+        app:layout_constraintTop_toTopOf="@+id/detectBtn"
+        app:layout_constraintVertical_bias="0.0" />
 
     <Button
         android:id="@+id/detectBtn"
@@ -28,6 +29,20 @@
 
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.185"
+        app:layout_constraintStart_toEndOf="@+id/snapBtn" />
+
+
+    <Button
+        android:id="@+id/showBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="nextPg"
+        android:text="Show"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.82"
         app:layout_constraintStart_toEndOf="@+id/snapBtn" />
 
     <ImageView
