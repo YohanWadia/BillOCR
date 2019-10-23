@@ -13,46 +13,32 @@ import android.widget.EditText;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDialogFragment;
 
-public class MyDialog extends AppCompatDialogFragment {
+public class MyEditDialog extends AppCompatDialogFragment {
     EditText num;
     Button btn;
-    private MyDialogListener listener;
+    private MyEditDialogListener listener;
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         //return super.onCreateDialog(savedInstanceState); we will return our own
-        //first get arguments
-        Bundle mArgs = getArguments();
-        final float amt1 = mArgs.getFloat("amt");
-
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         LayoutInflater inflater = getActivity().getLayoutInflater();
-        View view = inflater.inflate(R.layout.dialog, null);
+        View view = inflater.inflate(R.layout.editdialog, null);
 
         builder.setView(view)
-                .setTitle("For Splitting " + amt1);
-
-                /*.setPositiveButton("ok", new DialogInterface.OnClickListener() {//this is better so you dont have to add btns
+                .setTitle("Correct OCR")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {//this is better so you dont have to add btns
                     @Override                                                       //in your own layout XML & less code too
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        String username = editTextUsername.getText().toString();
-                        String password = editTextPassword.getText().toString();
-                        listener.applyTexts(username, password);
+                        Log.e("CLICK", "New val: " + num.getText().toString());
+                        float newVal = Float.valueOf(num.getText().toString());
+                        listener.applyChange(newVal);
                     }
-                });*/
+                });
 
-        num = view.findViewById(R.id.editText);
-        btn = view.findViewById(R.id.button);
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.e("CLICK", "SplitBy: " + num.getText());
-                float splitby = Float.valueOf(num.getText().toString());
-                listener.sendDiv(amt1/splitby);
-                dismiss();
-            }
-        });
+        num = view.findViewById(R.id.editText2);
+
 
         return builder.create();
     }
@@ -62,14 +48,14 @@ public class MyDialog extends AppCompatDialogFragment {
         super.onAttach(context);
 
         try {
-            listener = (MyDialogListener) context;
+            listener = (MyEditDialogListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString() + "must implement ExampleDialogListener");
         }
     }
 
-    public interface MyDialogListener {
-        void sendDiv(float dividedAmt);
+    public interface MyEditDialogListener {
+        void applyChange(float newVal);
     }
 
 }
